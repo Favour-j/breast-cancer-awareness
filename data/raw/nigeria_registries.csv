@@ -1,0 +1,4 @@
+registry,region,years_covered,breast_asr_per_100k_women,breast_cases_n,notes,citation
+Ibadan Cancer Registry (IBCR),"Ibadan, Southwest Nigeria",2009-2010,52.0,,Age-standardized incidence rate per 100000 women,"Jedy-Agba et al. 2012, Cancer Epidemiology, PubMed 22621842"
+Abuja Cancer Registry (ABCR),"Abuja, North Central Nigeria",2009-2010,64.6,,Age-standardized incidence rate per 100000 women,"Jedy-Agba et al. 2012, Cancer Epidemiology, PubMed 22621842"
+Edo-Benin Cancer Registry (EBCR),"Benin City, South-South Nigeria",2016-2018,,205,ASR not reported in source; case count only (breast cancer cases in method-of-detection study),"Method of detection study, PMC12380961"
