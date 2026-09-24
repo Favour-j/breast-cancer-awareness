@@ -269,7 +269,7 @@ with tab3:
 # 4. KEY FINDINGS
 # -----------------------------------------------------------------------------
 with tab4:
-    st.subheader("Key Findings: what the available data can — and cannot — tell us")
+    st.subheader("Key Findings: what the available data can  and cannot tell us")
     st.write(
         "This section turns the charts into plain-language findings. It only states conclusions supported by the data loaded into the dashboard and flags important limitations."
     )
