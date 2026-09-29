@@ -1000,6 +1000,7 @@ Breast_cancer,2026-09-24,502
 Breast_cancer,2026-09-25,407
 Breast_cancer,2026-09-26,460
 Breast_cancer,2026-09-27,519
+Breast_cancer,2026-09-28,515
 Breast_cancer_awareness_month,2024-01-01,0
 Breast_cancer_awareness_month,2024-01-03,0
 Breast_cancer_awareness_month,2024-01-04,1
@@ -1823,6 +1824,7 @@ Breast_cancer_awareness_month,2026-09-24,3
 Breast_cancer_awareness_month,2026-09-25,0
 Breast_cancer_awareness_month,2026-09-26,3
 Breast_cancer_awareness_month,2026-09-27,1
+Breast_cancer_awareness_month,2026-09-28,1
 Breast_self-examination,2024-01-01,30
 Breast_self-examination,2024-01-02,41
 Breast_self-examination,2024-01-03,34
@@ -2824,6 +2826,7 @@ Breast_self-examination,2026-09-24,24
 Breast_self-examination,2026-09-25,23
 Breast_self-examination,2026-09-26,14
 Breast_self-examination,2026-09-27,26
+Breast_self-examination,2026-09-28,21
 Mammography,2024-01-01,223
 Mammography,2024-01-02,301
 Mammography,2024-01-03,293
@@ -3825,3 +3828,4 @@ Mammography,2026-09-24,104
 Mammography,2026-09-25,72
 Mammography,2026-09-26,97
 Mammography,2026-09-27,101
+Mammography,2026-09-28,145
