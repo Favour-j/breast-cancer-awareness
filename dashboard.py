@@ -10,30 +10,44 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import pycountry
 import streamlit as st
 
 import icons
+
+pio.templates["observatory"] = go.layout.Template(
+    layout=go.Layout(
+        paper_bgcolor="#141F30", plot_bgcolor="#141F30",
+        font=dict(family="Plus Jakarta Sans, sans-serif", color="#A0AEC0"),
+        hoverlabel=dict(bgcolor="#0F172A", font_color="#EAF0F7"),
+        xaxis=dict(gridcolor="#2D3B50", zerolinecolor="#2D3B50"),
+        yaxis=dict(gridcolor="#2D3B50", zerolinecolor="#2D3B50"),
+        geo=dict(bgcolor="#141F30", landcolor="#253247", showland=True,
+                 oceancolor="#141F30", showocean=True, coastlinecolor="#405169"),
+    )
+)
+pio.templates.default = "plotly_dark+observatory"
 
 # -----------------------------------------------------------------------------
 # 1. PAGE SETUP & THEME CONFIGURATION
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Breast Cancer Surveillance Observatory",
-    page_icon=None,
+    page_icon=":material/monitoring:",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Professional Medical / Epidemiological Palette
 COLOR_PRIMARY = "#BE123C"       # Deep Clinical Rose / Crimson
-COLOR_PRIMARY_DARK = "#881337"  # Deep Burgundy
+COLOR_PRIMARY_DARK = "#FB7185"  # Deep Burgundy
 COLOR_SECONDARY = "#0F172A"     # Deep Slate
 COLOR_TEAL = "#0F766E"          # Clinical Teal / Surveillance
 COLOR_AMBER = "#B45309"         # Muted Amber / Caution
-COLOR_BORDER = "#E2E8F0"        # Hairline Slate
-COLOR_CARD_BG = "#FFFFFF"       # Clean Surface
-COLOR_BG_LIGHT = "#F8FAFC"      # Medical Slate 50
+COLOR_BORDER = "#2D3B50"        # Hairline Slate
+COLOR_CARD_BG = "#141F30"       # Clean Surface
+COLOR_BG_LIGHT = "#0B1220"      # Medical Slate 50
 
 DATA_DIR = Path(__file__).parent / "data" / "raw"
 PROCESSED_DIR = Path(__file__).parent / "data" / "processed"
@@ -43,15 +57,11 @@ PROCESSED_DIR = Path(__file__).parent / "data" / "processed"
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: #0F172A;
-    }
-
-    [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main, .stApp {
-        background-color: #F7F8FA;
+        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #EAF0F7;
     }
 
     /* Hide Streamlit default header clutter */
@@ -73,12 +83,13 @@ st.markdown("""
 
     /* Professional Clinical Header */
     .clinical-header {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
+        background: #141F30;
+        border: 1px solid #2D3B50;
         border-top: 3.5px solid #BE123C;
-        border-radius: 10px;
+        border-radius: 4px;
         padding: 1.4rem 1.75rem;
         margin-bottom: 1.25rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     }
     .institutional-tag {
         font-size: 0.72rem;
@@ -102,14 +113,14 @@ st.markdown("""
     .header-main-title {
         font-size: 1.75rem;
         font-weight: 800;
-        color: #0F172A;
-        letter-spacing: -0.025em;
+        color: #EAF0F7;
+        letter-spacing: 0;
         line-height: 1.2;
         margin-bottom: 0.4rem;
     }
     .header-main-desc {
         font-size: 0.9rem;
-        color: #475569;
+        color: #B2BDCC;
         line-height: 1.55;
         max-width: 1000px;
         margin-bottom: 0;
@@ -117,61 +128,20 @@ st.markdown("""
 
     /* Executive KPI Metric Cards */
     .kpi-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
+        background: #141F30;
+        border: 1px solid #2D3B50;
+        border-radius: 4px;
         padding: 1.1rem 1.25rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
         height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
-        will-change: transform;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .kpi-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
-        border-color: #BE123C;
-    }
-
-    /* Eye-Catching Data Analyst Side Intel Callouts */
-    .analyst-intel-banner {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 1.1rem 1.35rem;
-        color: #F8FAFC;
-        margin: 1rem 0 1.25rem 0;
-        box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.15);
-        display: flex;
-        align-items: flex-start;
-        gap: 1rem;
-        transition: transform 0.24s ease, box-shadow 0.24s ease;
-    }
-    .analyst-intel-banner:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.25);
-    }
-    .analyst-badge-pill {
-        background: #BE123C;
-        color: #FFFFFF;
-        font-size: 0.68rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 0.22rem 0.55rem;
-        border-radius: 9999px;
-        display: inline-block;
-        margin-bottom: 0.35rem;
-    }
-
-    @keyframes pulseBeacon {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-        70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-    .institutional-tag .live-beacon {
-        animation: pulseBeacon 2.2s infinite;
+        border-color: #405169;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06);
     }
     .kpi-header {
         display: flex;
@@ -184,7 +154,7 @@ st.markdown("""
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #64748B;
+        color: #A0AEC0;
         margin: 0;
     }
     .kpi-icon-pill {
@@ -194,14 +164,14 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
+        background-color: #0B1220;
+        border: 1px solid #2D3B50;
     }
     .kpi-value {
         font-size: 1.85rem;
         font-weight: 800;
-        color: #0F172A;
-        letter-spacing: -0.025em;
+        color: #EAF0F7;
+        letter-spacing: 0;
         line-height: 1.15;
         margin: 0.2rem 0 0.35rem 0;
         font-variant-numeric: tabular-nums;
@@ -211,16 +181,16 @@ st.markdown("""
     }
     .kpi-caption {
         font-size: 0.76rem;
-        color: #64748B;
+        color: #A0AEC0;
         display: flex;
         align-items: center;
         gap: 0.35rem;
         margin: 0;
     }
     .badge-positive {
-        background-color: #F0FDF4;
-        color: #166534;
-        border: 1px solid #BBF7D0;
+        background-color: #102D30;
+        color: #63C2BB;
+        border: 1px solid #205052;
         font-size: 0.7rem;
         font-weight: 600;
         padding: 0.08rem 0.35rem;
@@ -229,15 +199,15 @@ st.markdown("""
 
     /* Subdued Tag Styling for Multiselect */
     span[data-baseweb="tag"] {
-        background-color: #F1F5F9 !important;
-        border: 1px solid #CBD5E1 !important;
-        color: #0F172A !important;
+        background-color: #253247 !important;
+        border: 1px solid #405169 !important;
+        color: #EAF0F7 !important;
         border-radius: 6px !important;
         font-weight: 500 !important;
         font-size: 0.8rem !important;
     }
     span[data-baseweb="tag"] svg {
-        fill: #64748B !important;
+        fill: #A0AEC0 !important;
     }
 
     /* Section Subheadings */
@@ -245,13 +215,13 @@ st.markdown("""
         margin-top: 0.25rem;
         margin-bottom: 1.1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 1px solid #E2E8F0;
+        border-bottom: 1px solid #2D3B50;
     }
     .section-title {
         font-size: 1.15rem;
         font-weight: 700;
-        color: #0F172A;
-        letter-spacing: -0.015em;
+        color: #EAF0F7;
+        letter-spacing: 0;
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -259,7 +229,7 @@ st.markdown("""
     }
     .section-description {
         font-size: 0.86rem;
-        color: #64748B;
+        color: #A0AEC0;
         margin: 0;
         line-height: 1.5;
     }
@@ -270,7 +240,7 @@ st.markdown("""
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #475569;
+        color: #B2BDCC;
         display: flex;
         align-items: center;
         gap: 0.45rem;
@@ -288,67 +258,67 @@ st.markdown("""
         display: flex;
         align-items: flex-start;
         gap: 0.65rem;
+        border-left: 3.5px solid;
     }
     .callout-slate {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        color: #334155;
+        background-color: #0B1220;
+        border: 1px solid #2D3B50;
+        border-left-color: #EAF0F7;
+        color: #CCD5E1;
     }
     .callout-crimson {
-        background-color: #FFF1F2;
-        border: 1px solid #FFE4E6;
-        color: #881337;
+        background-color: #351625;
+        border: 1px solid #642039;
+        border-left-color: #BE123C;
+        color: #FB7185;
     }
     .callout-amber {
-        background-color: #FFFBEB;
-        border: 1px solid #FEF3C7;
-        color: #78350F;
+        background-color: #302313;
+        border: 1px solid #594022;
+        border-left-color: #B45309;
+        color: #E9AF61;
     }
     .callout-teal {
-        background-color: #F0FDFA;
-        border: 1px solid #CCFBF1;
-        color: #115E59;
+        background-color: #102D30;
+        border: 1px solid #205052;
+        border-left-color: #0F766E;
+        color: #63C2BB;
     }
 
     /* Registry Analysis Tile */
     .registry-tile {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
+        background: #141F30;
+        border: 1px solid #2D3B50;
+        border-radius: 4px;
         padding: 1.15rem 1.3rem;
         margin-bottom: 0.85rem;
-        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
-    }
-    .registry-tile:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.09);
-        border-color: #BE123C;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
     .registry-region-tag {
         font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #64748B;
+        color: #A0AEC0;
     }
     .registry-headline {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #0F172A;
+        color: #EAF0F7;
         margin: 0.2rem 0 0.4rem 0;
     }
     .registry-number {
         font-size: 2rem;
         font-weight: 800;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
         line-height: 1;
         margin-bottom: 0.25rem;
         font-variant-numeric: tabular-nums;
     }
     .registry-source {
         font-size: 0.74rem;
-        color: #94A3B8;
-        border-top: 1px solid #F1F5F9;
+        color: #A0AEC0;
+        border-top: 1px solid #253247;
         margin-top: 0.65rem;
         padding-top: 0.45rem;
     }
@@ -356,7 +326,7 @@ st.markdown("""
     /* Tabs Restyling - Clean Institutional Border */
     div[data-baseweb="tab-list"] {
         gap: 0.25rem;
-        background-color: #F1F5F9;
+        background-color: #253247;
         padding: 0.25rem;
         border-radius: 8px;
         border-bottom: none !important;
@@ -366,20 +336,21 @@ st.markdown("""
         border-radius: 6px;
         font-weight: 600;
         font-size: 0.86rem;
-        color: #475569;
+        color: #B2BDCC;
         padding: 0.5rem 1.1rem;
         border: none !important;
         transition: all 0.15s ease;
     }
     div[aria-selected="true"] {
-        background-color: #FFFFFF !important;
+        background-color: #141F30 !important;
         color: #BE123C !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
     }
 
     /* Policy Roadmap Steps */
     .policy-step {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
+        background: #141F30;
+        border: 1px solid #2D3B50;
         border-radius: 8px;
         padding: 0.9rem 1.15rem;
         margin-bottom: 0.65rem;
@@ -394,96 +365,55 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 0.35rem;
     }
-    .tier-1 { background-color: #FEE2E2; color: #991B1B; }
-    .tier-2 { background-color: #FEF3C7; color: #92400E; }
-    .tier-3 { background-color: #E0E7FF; color: #3730A3; }
+    .tier-1 { background-color: #351625; color: #FB7185; }
+    .tier-2 { background-color: #594022; color: #E9AF61; }
+    .tier-3 { background-color: #102D30; color: #63C2BB; }
 
-    /* Responsive adjustments: mobile first */
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-        html {
-            font-size: 16.5px;
-        }
         .block-container {
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
             padding-top: 0.75rem;
-            max-width: 100%;
         }
         .clinical-header {
             padding: 1.15rem 1rem;
-            border-radius: 8px;
-        }
-        .institutional-tag {
-            font-size: 0.66rem;
-            letter-spacing: 0.06em;
-            line-height: 1.45;
         }
         .header-main-title {
-            font-size: 1.35rem;
-            line-height: 1.25;
+            font-size: 1.45rem;
         }
         .header-main-desc {
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        .kpi-card {
-            padding: 1rem;
-        }
-        .kpi-value {
-            font-size: 1.65rem;
-        }
-        .kpi-caption {
-            font-size: 0.8rem;
-            line-height: 1.45;
-        }
-        .section-title {
-            font-size: 1.05rem;
-            line-height: 1.35;
-        }
-        .section-description {
-            font-size: 0.92rem;
-            line-height: 1.6;
-        }
-        .registry-number {
-            font-size: 1.7rem;
-        }
-        .registry-headline {
-            font-size: 1rem;
-            line-height: 1.4;
-        }
-        .scientific-callout {
-            font-size: 0.9rem;
-        }
-        div[data-baseweb="tab-list"] {
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        div[data-baseweb="tab-list"]::-webkit-scrollbar {
-            display: none;
-        }
-        div[data-baseweb="tab"] {
-            white-space: nowrap;
-            padding: 0.5rem 0.85rem;
-            font-size: 0.82rem;
-        }
-    }
-    @media (max-width: 480px) {
-        .header-main-title {
-            font-size: 1.22rem;
-        }
-        .header-main-desc {
-            font-size: 0.93rem;
+            font-size: 0.84rem;
         }
         .kpi-value {
             font-size: 1.5rem;
         }
-        .block-container {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
+        div[data-baseweb="tab-list"] {
+            flex-wrap: wrap;
         }
     }
+
+    :root { --obs-bg: #0B1220; --obs-surface: #141F30; --obs-border: #2D3B50; --obs-text: #EAF0F7; --obs-muted: #A0AEC0; --obs-crimson: #BE123C; --obs-teal: #0F766E; --obs-amber: #B45309; }
+    .stApp { background: var(--obs-bg); color: var(--obs-text); }
+    [data-testid="stSidebar"] { background: #0F172A; border-right: 1px solid var(--obs-border); }
+    .clinical-header { background: transparent; border: 0; border-bottom: 1px solid var(--obs-border); border-radius: 0; padding: 1rem 0 1.6rem; box-shadow: none; }
+    .header-main-title { font-size: 2rem; max-width: 940px; }
+    .institutional-tag { color: var(--obs-muted); letter-spacing: 0; }
+    .kpi-card { min-height: 165px; border-top: 2px solid var(--obs-crimson); box-shadow: none; }
+    .kpi-card:hover, .registry-tile:hover { transform: translateY(-3px); border-color: var(--obs-muted); box-shadow: 0 10px 25px -15px var(--obs-crimson); }
+    .kpi-value, .registry-number { font-family: 'JetBrains Mono', monospace; font-size: 2rem; color: var(--obs-text); }
+    .kpi-value.highlight-crimson { color: var(--obs-text); }
+    .kpi-caption { flex-wrap: wrap; }
+    .registry-tile { transition: transform .2s, border-color .2s; }
+    div[data-baseweb="tab-list"] { background: transparent; border-radius: 0; border-bottom: 1px solid var(--obs-border) !important; overflow-x: auto; flex-wrap: nowrap; }
+    div[data-baseweb="tab"] { white-space: nowrap; flex-shrink: 0; }
+    div[aria-selected="true"] { background: var(--obs-surface) !important; color: var(--obs-text) !important; box-shadow: inset 0 -2px var(--obs-crimson) !important; }
+    .section-title, .header-main-title, .registry-headline { overflow-wrap: anywhere; }
+    [data-testid="stMetricValue"] { font-family: 'JetBrains Mono', monospace; }
+    .live-beacon { animation: none; background: var(--obs-teal) !important; box-shadow: none !important; }
+    @media (max-width: 768px) { .header-main-title { font-size: 1.5rem; } .kpi-card { min-height: 145px; } div[data-baseweb="tab-list"] { flex-wrap: nowrap; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -633,12 +563,12 @@ if not df_who.empty:
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"""
-    <div style="padding-bottom: 0.8rem; border-bottom: 1px solid #E2E8F0; margin-bottom: 0.75rem;">
+    <div style="padding-bottom: 0.8rem; border-bottom: 1px solid #2D3B50; margin-bottom: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.55rem;">
             {icons.icon("ribbon", size=22, color=COLOR_PRIMARY, stroke_width=2.2)}
             <div>
-                <div style="font-weight: 800; font-size: 1rem; color: #0F172A; letter-spacing: -0.02em;">HEALTH OBSERVATORY</div>
-                <div style="font-size: 0.68rem; font-weight: 700; color: #64748B; letter-spacing: 0.05em; text-transform: uppercase;">Cancer Surveillance Initiative</div>
+                <div style="font-weight: 800; font-size: 1rem; color: #EAF0F7; letter-spacing: 0;">HEALTH OBSERVATORY</div>
+                <div style="font-size: 0.68rem; font-weight: 700; color: #A0AEC0; letter-spacing: 0.05em; text-transform: uppercase;">Cancer Surveillance Initiative</div>
             </div>
         </div>
     </div>
@@ -646,19 +576,19 @@ with st.sidebar:
 
     st.markdown(f"""
     <div class="sidebar-section-title">
-        {icons.icon('database', size=14, color='#475569')} Data Pipeline Status
+        {icons.icon('database', size=14, color='#B2BDCC')} Dataset Directory
     </div>
     """, unsafe_allow_html=True)
 
     def pipeline_status_tile(name, tier, source, cadence):
         return f"""
-        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 0.6rem 0.75rem; margin-bottom: 0.45rem;">
+        <div style="background: #141F30; border: 1px solid #2D3B50; border-radius: 6px; padding: 0.6rem 0.75rem; margin-bottom: 0.45rem;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; font-size: 0.8rem; color: #0F172A;">{name}</span>
-                <span style="font-size: 0.65rem; font-weight: 600; color: #047857; background: #ECFDF5; padding: 0.08rem 0.35rem; border-radius: 4px; border: 1px solid #A7F3D0;">ACTIVE</span>
+                <span style="font-weight: 700; font-size: 0.8rem; color: #EAF0F7;">{name}</span>
+                <span style="font-size: 0.65rem; font-weight: 600; color: #63C2BB; background: #102D30; padding: 0.08rem 0.35rem; border-radius: 4px; border: 1px solid #205052;">LOCAL CSV</span>
             </div>
-            <div style="font-size: 0.72rem; color: #64748B; margin-top: 0.15rem;">Cadence: <b>{cadence}</b> · Tier: {tier}</div>
-            <div style="font-size: 0.7rem; color: #94A3B8; margin-top: 0.05rem;">Source: {source}</div>
+            <div style="font-size: 0.72rem; color: #A0AEC0; margin-top: 0.15rem;">Cadence: <b>{cadence}</b> · Tier: {tier}</div>
+            <div style="font-size: 0.7rem; color: #A0AEC0; margin-top: 0.05rem;">Source: {source}</div>
         </div>
         """
 
@@ -669,7 +599,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"""
     <div class="sidebar-section-title">
-        {icons.icon('book_open', size=14, color='#475569')} Epidemiological Glossary
+        {icons.icon('book_open', size=14, color='#B2BDCC')} Epidemiological Glossary
     </div>
     """, unsafe_allow_html=True)
 
@@ -693,7 +623,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 0.72rem; color: #94A3B8; line-height: 1.45;">
+    <div style="font-size: 0.72rem; color: #A0AEC0; line-height: 1.45;">
         System Version: 2.2 Institutional Surveillance<br>
         Surveillance Lead: Favour Jokparose<br>
         Location: Lagos, Nigeria
@@ -723,7 +653,7 @@ st.markdown("""
 kpi_c1, kpi_c2, kpi_c3, kpi_c4 = st.columns(4)
 
 with kpi_c1:
-    oct_delta_display = f"+{awareness_delta_pct:.1f}%" if awareness_delta_pct and awareness_delta_pct > 0 else "Active"
+    oct_delta_display = f"+{awareness_delta_pct:.1f}%" if awareness_delta_pct and awareness_delta_pct > 0 else "Not loaded"
     st.markdown(f"""
     <div class="kpi-card">
         <div>
@@ -734,13 +664,13 @@ with kpi_c1:
             <div class="kpi-value highlight-crimson">{oct_delta_display}</div>
         </div>
         <div class="kpi-caption">
-            <span class="badge-positive">Verified</span> vs. Yearly Off-Season Baseline
+            <span class="badge-positive">Local data</span> vs. Yearly Off-Season Baseline
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 with kpi_c2:
-    mamm_delta_val = topic_deltas.get("Mammography", 47.1)
+    mamm_delta_val = topic_deltas.get("Mammography")
     st.markdown(f"""
     <div class="kpi-card">
         <div>
@@ -748,7 +678,7 @@ with kpi_c2:
                 <span class="kpi-label">Diagnostic Search Demand</span>
                 <span class="kpi-icon-pill">{icons.icon('activity', size=14, color=COLOR_TEAL)}</span>
             </div>
-            <div class="kpi-value">+{mamm_delta_val:.1f}%</div>
+            <div class="kpi-value">{f'+{mamm_delta_val:.1f}%' if mamm_delta_val is not None else 'Not loaded'}</div>
         </div>
         <div class="kpi-caption">
             <span class="badge-positive">Mammography</span> October Inquiry Spike
@@ -763,7 +693,7 @@ with kpi_c3:
         <div>
             <div class="kpi-header">
                 <span class="kpi-label">Sub-National ASR Disparity</span>
-                <span class="kpi-icon-pill">{icons.icon('map_pin', size=14, color='#334155')}</span>
+                <span class="kpi-icon-pill">{icons.icon('map_pin', size=14, color='#CCD5E1')}</span>
             </div>
             <div class="kpi-value">{gap_val_str}</div>
         </div>
@@ -790,7 +720,7 @@ with kpi_c4:
     </div>
     """, unsafe_allow_html=True)
 
-st.write("")
+st.caption("Local CSV analysis · Published registry benchmarks are retained with their study periods. No live API connection is implied.")
 
 # -----------------------------------------------------------------------------
 # 7. MAIN ANALYTICAL TABS
@@ -817,23 +747,10 @@ with tab_attention:
             Measures <b>active public interest and information demand</b>; does not represent clinical incidence or screening attendance.
         </p>
     </div>
-
-    <div class="analyst-intel-banner">
-        <div>
-            <span class="analyst-badge-pill">DATA ANALYST INTEL</span>
-            <div style="font-weight: 700; font-size: 1.05rem; color: #FFFFFF; margin-bottom: 0.25rem;">
-                The October Surge Cliff: a 14-day window of opportunity
-            </div>
-            <div style="font-size: 0.85rem; color: #CBD5E1; line-height: 1.5;">
-                Wikipedia queries for <i>Mammography</i> and <i>Breast cancer screening</i> spike sharply every October, then fall back to baseline within <b>14 days of November 1st</b>.
-                Health systems that miss this seasonal 30-day window lose the bulk of their annual self-directed screening inquiries.
-            </div>
-        </div>
-    </div>
     """, unsafe_allow_html=True)
 
     if df_pv.empty:
-        st.warning("Digital attention surveillance data not loaded. Execute `python ingest/fetch_pageviews.py`.")
+        st.warning("Digital attention surveillance data not loaded. Add your pageviews_history.csv to data/raw.")
     else:
         # Control Bar
         col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
@@ -885,7 +802,7 @@ with tab_attention:
 
         # Chart
         fig_pv = go.Figure()
-        palette = [COLOR_PRIMARY, COLOR_TEAL, COLOR_SECONDARY, COLOR_AMBER, "#6366F1"]
+        palette = ["#FB7185", "#63C2BB", "#A0AEC0", "#E9AF61", COLOR_PRIMARY]
 
         for idx, art in enumerate(selected_articles):
             sub_art = filtered_pv[filtered_pv["article"] == art].sort_values("date")
@@ -909,30 +826,30 @@ with tab_attention:
             fig_pv.add_vrect(
                 x0=f"{yr}-10-01",
                 x1=f"{yr}-10-31",
-                fillcolor="#FFF1F2",
+                fillcolor="#351625",
                 opacity=0.45,
                 line_width=1,
-                line_color="#FECDD3",
+                line_color="#642039",
                 line_dash="dot",
                 annotation_text=f"October Campaign {yr}",
                 annotation_position="top left",
-                annotation_font=dict(size=10, color="#9F1239")
+                annotation_font=dict(size=10, color="#FB7185")
             )
 
         fig_pv.update_layout(
-            template="plotly_white",
+            template="plotly_dark+observatory",
             height=420,
             margin=dict(l=65, r=20, t=35, b=40),
             xaxis=dict(
                 showgrid=True,
-                gridcolor="#F1F5F9",
+                gridcolor="#253247",
                 tickformat="%b %Y",
                 title=""
             ),
             yaxis=dict(
                 showgrid=True,
-                gridcolor="#F1F5F9",
-                title=dict(text=y_axis_label, font=dict(size=11, color="#64748B")),
+                gridcolor="#253247",
+                title=dict(text=y_axis_label, font=dict(size=11, color="#A0AEC0")),
                 tickformat=","
             ),
             hovermode="x unified",
@@ -942,11 +859,11 @@ with tab_attention:
                 y=1.04,
                 xanchor="left",
                 x=0,
-                bgcolor="rgba(255,255,255,0.9)"
+                bgcolor="rgba(20,31,48,0.95)"
             )
         )
 
-        st.plotly_chart(fig_pv, width="stretch", config={"displayModeBar": False})
+        st.plotly_chart(fig_pv, theme=None, width="stretch", config={"displayModeBar": False})
 
         # Deep Analytical Breakdown
         sub_c1, sub_c2 = st.columns([3, 2])
@@ -1001,27 +918,14 @@ with tab_who:
             Global Disease Burden: World Health Organization Surveillance Indicators
         </div>
         <p class="section-description">
-            Validated epidemiological metrics from the WHO Global Health Observatory across 200+ sovereign entities.
+            Epidemiological metrics from the locally supplied WHO Global Health Observatory extract.
             Enables cross-national comparison of 5-year survival, screening policies, and age-standardized mortality.
         </p>
-    </div>
-
-    <div class="analyst-intel-banner">
-        <div>
-            <span class="analyst-badge-pill">SURVEILLANCE PARADOX</span>
-            <div style="font-weight: 700; font-size: 1.05rem; color: #FFFFFF; margin-bottom: 0.25rem;">
-                The Global Survival Divergence: biology vs. presentation stage
-            </div>
-            <div style="font-size: 0.85rem; color: #CBD5E1; line-height: 1.5;">
-                5-year net survival exceeds <b>89% in high-resource nations</b> (Japan, North America) against roughly <b>27.7% in Nigeria</b>.
-                Epidemiological modeling attributes over <b>70% of this gap to late presentation (Stage III/IV)</b> and diagnostic delays, not intrinsic tumor aggressiveness.
-            </div>
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
     if df_who.empty:
-        st.warning("WHO Global Health Observatory dataset not found. Execute `python ingest/fetch_who_gho.py`.")
+        st.warning("WHO Global Health Observatory dataset not found. Add your who_gho_breast_cancer.csv to data/raw.")
     else:
         # Indicator Selector
         lookup = df_who[["IndicatorCode", "IndicatorName"]].drop_duplicates().copy()
@@ -1057,7 +961,7 @@ with tab_who:
         <div class="scientific-callout callout-teal" style="margin-top: 0.5rem; margin-bottom: 1.25rem;">
             <div>
                 <b>Clinical Definition:</b> {indicator_info}
-                <div style="font-size: 0.76rem; color: #115E59; margin-top: 0.25rem;">
+                <div style="font-size: 0.76rem; color: #63C2BB; margin-top: 0.25rem;">
                     Surveillance Epoch: <b>{int(latest_year) if pd.notna(latest_year) else 'Multi-Year'}</b> · Standard: WHO GHO Database
                 </div>
             </div>
@@ -1102,50 +1006,25 @@ with tab_who:
                     hover_name="Country",
                     hover_data={"SpatialDim": False, "NumericValue": ":.2f"},
                     color_continuous_scale=[
-                        (0.0, "#CCFBF1"),
-                        (0.2, "#2DD4BF"),
-                        (0.45, "#0D9488"),
-                        (0.7, "#E11D48"),
-                        (0.88, "#BE123C"),
-                        (1.0, "#4C0519")
+                        (0.0, "#351625"),
+                        (0.25, "#FDA4AF"),
+                        (0.6, "#BE123C"),
+                        (1.0, "#0F766E")
                     ],
-                    labels={"NumericValue": "Reported Metric"}
+                    labels={"NumericValue": "Value"}
                 )
                 fig_map.update_layout(
-                    template="plotly_white",
-                    height=520,
+                    template="plotly_dark+observatory",
+                    height=500,
                     margin=dict(l=0, r=0, t=10, b=0),
-                    coloraxis_colorbar=dict(
-                        title=dict(text="<b>SURVEILLANCE METRIC</b>", font=dict(size=10, color="#475569")),
-                        thickness=14,
-                        len=0.75,
-                        bgcolor="rgba(255,255,255,0.9)",
-                        bordercolor="#E2E8F0",
-                        borderwidth=1,
-                        tickfont=dict(size=10, color="#0F172A")
-                    ),
                     geo=dict(
                         showframe=False,
                         showcoastlines=True,
-                        coastlinecolor="#94A3B8",
-                        coastlinewidth=0.75,
-                        showland=True,
-                        landcolor="#FFFFFF",
-                        showocean=True,
-                        oceancolor="#F1F5F9",
-                        showlakes=True,
-                        lakecolor="#F1F5F9",
-                        showcountries=True,
-                        countrycolor="#CBD5E1",
-                        countrywidth=0.75,
                         projection_type="natural earth",
                         bgcolor="rgba(0,0,0,0)"
                     )
                 )
-                fig_map.update_traces(
-                    hovertemplate="<b>%{hovertext}</b><br><span style='color:#64748B;'>Value:</span> <b>%{z:.2f}</b><extra></extra>"
-                )
-                st.plotly_chart(fig_map, width="stretch")
+                st.plotly_chart(fig_map, theme=None, width="stretch")
 
             else:
                 top_10 = valid_numeric.sort_values("NumericValue", ascending=False).head(10)
@@ -1164,13 +1043,13 @@ with tab_who:
                         labels={"NumericValue": "Reported Measure", "Country": ""}
                     )
                     fig_t.update_layout(
-                        template="plotly_white",
+                        template="plotly_dark+observatory",
                         height=370,
                         margin=dict(l=10, r=10, t=20, b=20),
                         yaxis=dict(autorange="reversed"),
                         coloraxis_showscale=False
                     )
-                    st.plotly_chart(fig_t, width="stretch")
+                    st.plotly_chart(fig_t, theme=None, width="stretch")
 
                 with col_b:
                     st.markdown("##### Lowest 10 Reporting Jurisdictions")
@@ -1180,17 +1059,17 @@ with tab_who:
                         y="Country",
                         orientation="h",
                         color="NumericValue",
-                        color_continuous_scale=["#0F172A", "#0F766E"],
+                        color_continuous_scale=["#EAF0F7", "#0F766E"],
                         labels={"NumericValue": "Reported Measure", "Country": ""}
                     )
                     fig_b.update_layout(
-                        template="plotly_white",
+                        template="plotly_dark+observatory",
                         height=370,
                         margin=dict(l=10, r=10, t=20, b=20),
                         yaxis=dict(autorange="reversed"),
                         coloraxis_showscale=False
                     )
-                    st.plotly_chart(fig_b, width="stretch")
+                    st.plotly_chart(fig_b, theme=None, width="stretch")
 
         else:
             # Policy Status Distribution
@@ -1209,18 +1088,18 @@ with tab_who:
                         color_discrete_map={
                             "Yes": "#059669",
                             "No": "#DC2626",
-                            "Don't know": "#D97706",
-                            "No response": "#64748B",
-                            "No data received": "#CBD5E1"
+                            "Don't know": "#B45309",
+                            "No response": "#A0AEC0",
+                            "No data received": "#405169"
                         },
                         hole=0.5
                     )
                     fig_pie.update_layout(
-                        template="plotly_white",
+                        template="plotly_dark+observatory",
                         height=340,
                         margin=dict(l=10, r=10, t=20, b=20)
                     )
-                    st.plotly_chart(fig_pie, width="stretch")
+                    st.plotly_chart(fig_pie, theme=None, width="stretch")
 
                 with cat_c2:
                     st.markdown("##### Policy Implication Summary")
@@ -1236,7 +1115,7 @@ with tab_who:
         st.markdown("---")
         st.markdown(f"""
         <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-            {icons.icon('search', size=15, color='#475569')} National Data Query & Country Explorer
+            {icons.icon('search', size=15, color='#B2BDCC')} National Data Query & Country Explorer
         </div>
         """, unsafe_allow_html=True)
 
@@ -1286,21 +1165,9 @@ with tab_nigeria:
     """, unsafe_allow_html=True)
 
     if df_nig.empty:
-        st.warning("Sub-national registry dataset not found. Execute `python ingest/nigeria_registry_data.py`.")
+        st.warning("Sub-national registry dataset not found. Add your nigeria_registries.csv to data/raw.")
     else:
         st.markdown("""
-        <div class="analyst-intel-banner">
-            <div>
-                <span class="analyst-badge-pill">REGISTRY DIAGNOSTICS</span>
-                <div style="font-weight: 700; font-size: 1.05rem; color: #FFFFFF; margin-bottom: 0.25rem;">
-                    The Urban ASR Diagnostic Artefact: Abuja (64.6) vs. Ibadan (52.0)
-                </div>
-                <div style="font-size: 0.85rem; color: #CBD5E1; line-height: 1.5;">
-                    Abuja's <b>24.2% higher recorded Age-Standardized Rate</b> over Ibadan primarily reflects <b>socio-economic diagnostic density</b>, tertiary facility concentration, and opportunistic health checks in the Federal Capital Territory, not higher biological incidence.
-                </div>
-            </div>
-        </div>
-
         <div class="scientific-callout callout-amber">
             <div>
                 <b>Surveillance Boundary:</b> Nigeria has not yet instituted a centralized unified National Cancer Registry.
@@ -1319,7 +1186,7 @@ with tab_nigeria:
                 <div class="registry-region-tag">North Central · Federal Capital Territory</div>
                 <div class="registry-headline">Abuja Cancer Registry (ABCR)</div>
                 <div class="registry-number" style="color: {COLOR_PRIMARY};">64.6</div>
-                <div style="font-size: 0.8rem; color: #64748B;">ASR per 100,000 women (2009–2010 study period)</div>
+                <div style="font-size: 0.8rem; color: #A0AEC0;">ASR per 100,000 women (2009–2010 study period)</div>
                 <div class="registry-source">
                     Citation: Jedy-Agba et al. 2012, <i>Cancer Epidemiology</i> (PubMed 22621842)
                 </div>
@@ -1331,8 +1198,8 @@ with tab_nigeria:
             <div class="registry-tile">
                 <div class="registry-region-tag">Southwest · Oyo State</div>
                 <div class="registry-headline">Ibadan Cancer Registry (IBCR)</div>
-                <div class="registry-number" style="color: {COLOR_SECONDARY};">52.0</div>
-                <div style="font-size: 0.8rem; color: #64748B;">ASR per 100,000 women (2009–2010 study period)</div>
+                <div class="registry-number" style="color: #63C2BB;">52.0</div>
+                <div style="font-size: 0.8rem; color: #A0AEC0;">ASR per 100,000 women (2009–2010 study period)</div>
                 <div class="registry-source">
                     Citation: Jedy-Agba et al. 2012 (Oldest PBCR in Sub-Saharan Africa)
                 </div>
@@ -1345,7 +1212,7 @@ with tab_nigeria:
                 <div class="registry-region-tag">South-South · Edo State</div>
                 <div class="registry-headline">Edo-Benin Cancer Registry (EBCR)</div>
                 <div class="registry-number" style="color: {COLOR_AMBER};">205</div>
-                <div style="font-size: 0.8rem; color: #64748B;">Diagnosed study cohort cases (2016–2018)</div>
+                <div style="font-size: 0.8rem; color: #A0AEC0;">Diagnosed study cohort cases (2016–2018)</div>
                 <div class="registry-source">
                     Citation: Method of detection study (PMC12380961)
                 </div>
@@ -1371,21 +1238,21 @@ with tab_nigeria:
             ))
 
             fig_bar.update_layout(
-                template="plotly_white",
+                template="plotly_dark+observatory",
                 height=360,
                 margin=dict(l=55, r=20, t=30, b=40),
                 yaxis=dict(
                     title="Age-Standardized Rate per 100,000 Women",
-                    gridcolor="#F1F5F9"
+                    gridcolor="#253247"
                 ),
                 xaxis=dict(title="")
             )
-            st.plotly_chart(fig_bar, width="stretch")
+            st.plotly_chart(fig_bar, theme=None, width="stretch")
 
         # Evidence Archive Table
         st.markdown(f"""
         <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-            {icons.icon('file_text', size=15, color='#475569')} Published Registry Evidence & Literature Citations
+            {icons.icon('file_text', size=15, color='#B2BDCC')} Published Registry Evidence & Literature Citations
         </div>
         """, unsafe_allow_html=True)
         evidence_tab = df_nig.rename(columns={
@@ -1439,7 +1306,7 @@ with tab_findings:
         st.markdown("#### 1. Sub-National Registry Disparity: The Abuja–Ibadan Differential")
         st.markdown(f"""
         During the standardized 2009–2010 study epoch, **Abuja reported an ASR of 64.6 per 100,000 women**,
-        compared to **Ibadan's 52.0 per 100,000 women**, demonstrating a **{nigeria_gap_pct:.1f}% higher reported incidence** in Abuja.
+        compared to **Ibadan's 52.0 per 100,000 women** — demonstrating a **{f'{nigeria_gap_pct:.1f}%' if nigeria_gap_pct is not None else '24.2% (cited comparison)'} higher reported incidence** in Abuja.
         """)
         st.markdown("""
         <div class="scientific-callout callout-slate">
@@ -1452,11 +1319,11 @@ with tab_findings:
 
     with f1_b:
         st.markdown("""
-        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1.15rem;">
-            <div style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #991B1B; margin-bottom: 0.5rem;">
+        <div style="background: #141F30; border: 1px solid #2D3B50; border-radius: 8px; padding: 1.15rem;">
+            <div style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #FB7185; margin-bottom: 0.5rem;">
                 Methodological Boundaries
             </div>
-            <ul style="font-size: 0.82rem; color: #475569; margin: 0; padding-left: 1.1rem; line-height: 1.55;">
+            <ul style="font-size: 0.82rem; color: #B2BDCC; margin: 0; padding-left: 1.1rem; line-height: 1.55;">
                 <li>Do <b>not</b> extrapolate 64.6 as Nigeria's national incidence rate.</li>
                 <li>Do <b>not</b> attribute regional variance to biological factors without adjusting for diagnostic infrastructure.</li>
                 <li>Account for rural-urban diagnostic access barriers.</li>
@@ -1491,11 +1358,11 @@ with tab_findings:
 
     with f2_b:
         st.markdown("""
-        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1.15rem;">
-            <div style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #0F172A; margin-bottom: 0.5rem;">
+        <div style="background: #141F30; border: 1px solid #2D3B50; border-radius: 8px; padding: 1.15rem;">
+            <div style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #EAF0F7; margin-bottom: 0.5rem;">
                 Public Health Insights
             </div>
-            <ul style="font-size: 0.82rem; color: #475569; margin: 0; padding-left: 1.1rem; line-height: 1.55;">
+            <ul style="font-size: 0.82rem; color: #B2BDCC; margin: 0; padding-left: 1.1rem; line-height: 1.55;">
                 <li>Digital queries signal <b>active information demand</b> rather than disease prevalence.</li>
                 <li>Elevated <i>Mammography</i> search volume demonstrates active consumer interest in screening.</li>
                 <li>Public health campaigns must pair awareness messaging with immediate physical clinical access.</li>
@@ -1528,18 +1395,18 @@ with tab_findings:
         <div>
             <div class="policy-step">
                 <span class="policy-tier-tag tier-1">Tier 1 · Immediate Priority</span>
-                <div style="font-weight: 700; font-size: 0.86rem; color: #0F172A;">Clinical Breast Examination at Primary Healthcare (PHC)</div>
-                <div style="font-size: 0.78rem; color: #64748B; margin-top: 0.15rem;">Mandate and fund routine clinical breast examination by community health workers across primary health centers.</div>
+                <div style="font-weight: 700; font-size: 0.86rem; color: #EAF0F7;">Clinical Breast Examination at Primary Healthcare (PHC)</div>
+                <div style="font-size: 0.78rem; color: #A0AEC0; margin-top: 0.15rem;">Mandate and fund routine clinical breast examination by community health workers across primary health centers.</div>
             </div>
             <div class="policy-step">
                 <span class="policy-tier-tag tier-2">Tier 2 · Medium-Term Priority</span>
-                <div style="font-weight: 700; font-size: 0.86rem; color: #0F172A;">Subsidized Diagnostic Pathology & Mammography</div>
-                <div style="font-size: 0.78rem; color: #64748B; margin-top: 0.15rem;">Establish national public-private subsidy programs for core biopsy and diagnostic imaging.</div>
+                <div style="font-weight: 700; font-size: 0.86rem; color: #EAF0F7;">Subsidized Diagnostic Pathology & Mammography</div>
+                <div style="font-size: 0.78rem; color: #A0AEC0; margin-top: 0.15rem;">Establish national public-private subsidy programs for core biopsy and diagnostic imaging.</div>
             </div>
             <div class="policy-step">
                 <span class="policy-tier-tag tier-3">Tier 3 · Strategic Surveillance</span>
-                <div style="font-weight: 700; font-size: 0.86rem; color: #0F172A;">Unified National Cancer Registry System</div>
-                <div style="font-size: 0.78rem; color: #64748B; margin-top: 0.15rem;">Integrate regional PBCRs into a federally coordinated surveillance database with digital reporting.</div>
+                <div style="font-weight: 700; font-size: 0.86rem; color: #EAF0F7;">Unified National Cancer Registry System</div>
+                <div style="font-size: 0.78rem; color: #A0AEC0; margin-top: 0.15rem;">Integrate regional PBCRs into a federally coordinated surveillance database with digital reporting.</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1550,7 +1417,7 @@ with tab_findings:
 # -----------------------------------------------------------------------------
 st.markdown("---")
 st.markdown(f"""
-<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; color: #64748B; font-size: 0.78rem; padding: 0.6rem 0;">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; color: #A0AEC0; font-size: 0.78rem; padding: 0.6rem 0;">
     <div style="display: flex; align-items: center; gap: 0.4rem;">
         {icons.icon('ribbon', size=16, color=COLOR_PRIMARY)}
         <span><b>Breast Cancer Surveillance & Health Informatics Observatory</b> · Surveillance Director: Favour Jokparose · Lagos, Nigeria</span>
