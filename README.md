@@ -5,7 +5,7 @@ A public-facing breast-cancer data storytelling project built by **Favour Jokpar
 > **Purpose:** make breast-cancer data understandable to people with different levels of data and health knowledge. This is an educational analytics project, not medical advice.
 
 
-## Link: https://breast-cancer-awareness.streamlit.app/
+ **[View the dashboard →](https://breast-cancer-awareness.streamlit.app/)
 
 
 ## Dashboard preview
